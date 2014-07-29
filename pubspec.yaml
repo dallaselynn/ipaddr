@@ -1,11 +1,9 @@
 name: ipaddr
-version: 0.0.0
+version: 0.1.0
 author: Dallas Lynn
 description: A library for working with ip addresses, ported from Google's Python IP address library at https://code.google.com/p/ipaddr-py/
 homepage: http://dallaslynn.com
+dependencies:
+  bignum: any
 dev_dependencies:
   unittest: any
-
-#dependencies:
-#  js: any
-#  unittest: any

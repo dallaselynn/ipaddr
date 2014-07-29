@@ -2,7 +2,6 @@ part of ipaddr;
 
 
 /**
- *
  * Find a sequence of addresses
  *
  * [addresses] is a list of IPv4 or IPv6 addresses
@@ -26,7 +25,6 @@ _find_address_range(List <_BaseIP> addresses) {
 
 
 /**
- *
  * Get the number of leading bits that are the same for two numbers.
  *
  * Takes two integers and the maximum number of bits to compare.
@@ -124,33 +122,24 @@ summarize_address_range(first, last) {
       }
     }
 
-    print('getting prefix for $first_ip $current $ip_bits');
     int prefix = _get_prefix_length(first_ip, current, ip_bits);
-    print('got prefix $prefix');
 
     var net;
     if(first.version == 4) {
       net = new IPv4Network('$first/$prefix');
     } else if(first.version == 6) {
-      //net = IPv6Network('$first/$prefix');
-      throw new ValueError('no ipv6 yet');
-      print('no ipv6 yet');
+      net = new IPv6Network('$first/$prefix');
     } else {
       throw new ValueError('unknown IP version');
     }
 
-    print('adding $net to $networks');
     networks.add(net);
-    print('checking if $current is ${net.ALL_ONES}');
     if(current == net.ALL_ONES) {
-      print('breaking');
       break;
     }
 
     first_ip = current + 1;
-    print('set first_ip to $first_ip');
     first = IPAddress(first_ip, version:first.version);
-    print('made new first $first');
   }
 
   return networks;
@@ -235,7 +224,6 @@ collapse_address_list(List<dynamic> addresses) {
 
   // split IP addresses and networks
   for(var ip in addresses) {
-    print('processing $ip');
     if(ip is _BaseIP) {
       if(ips.isNotEmpty && ips.last.version != ip.version) {
         throw new VersionError("$ip and ${ips.last} are not of the same version");
@@ -250,7 +238,7 @@ collapse_address_list(List<dynamic> addresses) {
       if(nets.isNotEmpty && nets.last.version != ip.version) {
         throw new VersionError("$ip and ${ips.last} are not of the same version");
       }
-      print('adding $ip to nets');
+
       nets.add(ip);
     }
   }
@@ -260,7 +248,6 @@ collapse_address_list(List<dynamic> addresses) {
   ips.sort((x,y) => x._ip.compareTo(y._ip));
   nets = nets.toSet().toList();
   nets.sort((x,y) => x.compare_networks(y));
-  print('sorted nets $nets');
 
   while(i < ips.length) {
     var range = _find_address_range(ips.sublist(i));
@@ -271,26 +258,16 @@ collapse_address_list(List<dynamic> addresses) {
 
   addrs.addAll(nets);
   addrs.sort((x,y) => x.compare_networks(y));
-  print('recursing with addrs $addrs');
+
   return _collapse_address_list_recursive(addrs);
 }
 
-
-abstract class _BaseIPAddr {
-  int get _ip;
-  int toInt() => this._ip;
-}
-
-// TODO: try removing constructor and just marking version and max_prefixlen final
-// and then using this as mixin instead of subclassing it - might have to stop extending _BaseIPAddr though?
-class _BaseV4 extends Object with _BaseIPAddr {
+abstract class _BaseV4 {
   final int ALL_ONES = pow(2, IPV4LENGTH) - 1;
-  int version, max_prefixlen;
+  final int version = 4;
+  final int max_prefixlen = IPV4LENGTH;
 
-  _BaseV4() {
-    this.version = 4;
-    this.max_prefixlen = IPV4LENGTH;
-  }
+  int toInt() => _ip;
 
   /**
    *  Turn the given IP string into an integer for comparison.
@@ -308,7 +285,7 @@ class _BaseV4 extends Object with _BaseIPAddr {
     int packed_ip = 0;
     octets.forEach((oc) {
       try {
-        packed_ip = (packed_ip << 8) | this._parse_octet(oc);
+        packed_ip = (packed_ip << 8) | _parse_octet(oc);
       } catch(e) {
         throw new AddressValueError(ip);
       }
@@ -417,77 +394,80 @@ abstract class _BaseIP {
   int get _ip;
   String _string_from_ip_int(ip_int);
 
-  String toString() => this._string_from_ip_int(this._ip);
-  bool operator ==(Object other) => (this._ip == other._ip) && (this.version == other.version);
+  String toString() => _string_from_ip_int(_ip);
+  bool operator ==(Object other) => (_ip == other._ip) && (version == other.version);
 
   // DIFFERENCE: Python version returns NotImplemented if other is not an int for +/-
   // integer add/sub not meant to support add/sub of addresses
-  _BaseIP operator +(int other) => IPAddress((this._ip + other), version: this.version);
-  _BaseIP operator -(int other) => IPAddress(this._ip - other, version:this.version);
+  _BaseIP operator +(int other) => IPAddress((_ip + other), version: version);
+  _BaseIP operator -(int other) => IPAddress(_ip - other, version:version);
 
   bool operator <=(_BaseIP other) => !(this > other);
   bool operator >=(_BaseIP other) => !(this < other);
 
   bool operator <(_BaseIP other) {
-    if(this.version != other.version) {
+    if(version != other.version) {
       throw new VersionError('${this.toString()} and ${other.toString()} are not of the same version');
     }
 
-    return this._ip < other._ip;
+    return _ip < other._ip;
   }
 
   bool operator >(_BaseIP other) {
-    if(this.version != other.version) {
+    if(version != other.version) {
       throw new VersionError('');
     }
 
-    return this._ip > other._ip;
+    return _ip > other._ip;
   }
 
-  int get hashCode => this._ip.toRadixString(16).hashCode;
+  int get hashCode => _ip.toRadixString(16).hashCode;
 }
 
 
 abstract class _BaseNet {
   // abstract instance members
   // TODO: should be getters?  these are not really abstract.
-  int prefixlen, max_prefixlen, version;
-  IPv4Address ip, netmask;
+  //int prefixlen, max_prefixlen, version;
+  var ip, netmask;  // IPv4Address or IPv6Address
   int get ALL_ONES;
   Map<String, Object> _cache;
   int _ip_int_from_string(String ip_str);
 
+  int get prefixlen;
+  int get max_prefixlen;
+  int get version;
 
   String toString() => "$ip/$prefixlen";
-  int get hashCode => (this.network.toInt() ^ this.netmask.toInt()).hashCode;
+  int get hashCode => (network.toInt() ^ netmask.toInt()).hashCode;
 
   bool operator <(_BaseNet other) {
-    if(this.version != other.version) {
+    if(version != other.version) {
       throw new VersionError('$this and $other are not of the same version');
     }
 
-    if(this.network != other.network) {
-      return this.network < other.network;
+    if(network != other.network) {
+      return network < other.network;
     }
 
-    if(this.netmask != other.netmask) {
-      return this.netmask < other.netmask;
+    if(netmask != other.netmask) {
+      return netmask < other.netmask;
     }
 
     return false;
   }
 
   bool operator >(_BaseNet other) {
-    if(this.version != other.version) {
+    if(version != other.version) {
       throw new VersionError('$this and $other are not of the same version');
     }
 
-    if(this.network != other.network) {
-      return this.network > other.network;
+    if(network != other.network) {
+      return network > other.network;
     }
 
-    if(this.netmask != other.netmask) {
-      return this.netmask > other.netmask;
+    if(netmask != other.netmask) {
+      return netmask > other.netmask;
     }
 
     return false;
@@ -498,10 +478,10 @@ abstract class _BaseNet {
 
   bool operator ==(Object other) {
     try {
-      return (this.version == other.version) && (this.network == other.network) && (this.netmask.toInt() == other.netmask.toInt());
+      return (version == other.version) && (network == other.network) && (netmask.toInt() == other.netmask.toInt());
     } catch (e) {
       if(other is _BaseIP) {
-        return (this.version == other.version) && (this._ip == other._ip);
+        return (version == other.version) && (_ip == other._ip);
       } else {
         return false;
       }
@@ -516,76 +496,75 @@ abstract class _BaseNet {
       if(network + n > broadcast) {
         throw new RangeError('');
       }
-      return IPAddress(network + n, version:this.version);
+      return IPAddress(network + n, version:version);
     } else {
       n += 1;
       if(broadcast + n < network) {
         throw new RangeError('');
       }
-      return IPAddress(broadcast + n, version:this.version);
+      return IPAddress(broadcast + n, version:version);
     }
   }
 
   bool contains(var other) {
     // different versions never match
-    if(this.version != other.version) {
+    if(version != other.version) {
       return false;
     }
 
     // other is a network
     if(other is _BaseNet) {
-      return (this.network <= other.network && this.broadcast >= other.broadcast);
+      return (network <= other.network && broadcast >= other.broadcast);
     } else {
       // other is an address
-      return (this.network.toInt() <= other._ip && other._ip <= this.broadcast.toInt());
+      return (network.toInt() <= other._ip && other._ip <= broadcast.toInt());
     }
   }
 
   // tell if this is partly contained in other.
   bool overlaps(_BaseNet other) {
-    return (other.contains(this.network) || other.contains(this.broadcast) ||
+    return (other.contains(network) || other.contains(broadcast) ||
         (this.contains(other.network) || this.contains(other.broadcast)));
   }
 
   _BaseIP get network {
-    var x = this._cache['network'];
+    var x = _cache['network'];
     if(x == null) {
-       x = IPAddress(this._ip & this.netmask.toInt(), version:this.version);
-       this._cache['network'] = x;
+       x = IPAddress(_ip & netmask.toInt(), version:version);
+       _cache['network'] = x;
     }
 
     return x;
   }
 
   _BaseIP get broadcast {
-    var x = this._cache['broadcast'];
+    var x = _cache['broadcast'];
     if(x == null) {
-       x = IPAddress(this._ip | this.hostmask.toInt(), version:this.version);
-       this._cache['broadcast'] = x;
+       x = IPAddress(_ip | hostmask.toInt(), version:version);
+       _cache['broadcast'] = x;
     }
 
     return x;
   }
 
   _BaseIP get hostmask {
-    var x = this._cache['hostmask'];
+    var x = _cache['hostmask'];
     if(x == null) {
-      x = IPAddress(this.netmask.toInt() ^ this.ALL_ONES, version:this.version);
-      this._cache['hostmask'] = x;
+      x = IPAddress(netmask.toInt() ^ ALL_ONES, version:version);
+      _cache['hostmask'] = x;
     }
 
     return x;
   }
 
-  String get with_prefixlen => '${this.ip}/${this.prefixlen}';
-  String get with_netmask => '${this.ip}/${this.netmask}';
-  String get with_hostmask => '${this.ip}/${this.hostmask}';
+  String get with_prefixlen => '$ip/$prefixlen';
+  String get with_netmask => '$ip/$netmask';
+  String get with_hostmask => '$ip/$hostmask';
 
-  get numhosts => this.broadcast.toInt() - this.network.toInt() + 1;
+  get numhosts => broadcast.toInt() - network.toInt() + 1;
 
   /**
-   *
-  """Remove an address from a larger block.
+   * Remove an address from a larger block.
 
   For example:
 
@@ -620,7 +599,7 @@ abstract class _BaseNet {
   """
   */
   address_exclude(other) {
-    if(this.version != other.version) {
+    if(version != other.version) {
       throw new VersionError("$this and $other are not of the same version");
     }
 
@@ -713,27 +692,27 @@ abstract class _BaseNet {
    */
 
   int compare_networks(other) {
-    if(this.version < other.version) {
+    if(version < other.version) {
       return -1;
     }
 
-    if(this.version > other.version) {
+    if(version > other.version) {
       return 1;
     }
 
-    if(this.network < other.network) {
+    if(network < other.network) {
       return -1;
     }
 
-    if(this.network > other.network) {
+    if(network > other.network) {
       return 1;
     }
 
-    if(this.netmask < other.netmask) {
+    if(netmask < other.netmask) {
       return -1;
     }
 
-    if(this.netmask > other.netmask) {
+    if(netmask > other.netmask) {
       return 1;
     }
 
@@ -749,7 +728,7 @@ abstract class _BaseNet {
    *
    */
   int _prefix_from_ip_int(int ip) {
-    int prefixlen = this.max_prefixlen;
+    int prefixlen = max_prefixlen;
     while(prefixlen != 0) {
       if((ip & 1) != 0) {
         break;
@@ -778,18 +757,18 @@ abstract class _BaseNet {
    int _prefix_from_ip_string(String ip_str) {
      int ip_int;
      try {
-       ip_int = this._ip_int_from_string(ip_str);
+       ip_int = _ip_int_from_string(ip_str);
      } catch (AddressValueError) {
        throw new NetmaskValueError.invalidNetmask(ip_str);
      }
 
      try {
-       return this._prefix_from_ip_int(ip_int);
+       return _prefix_from_ip_int(ip_int);
      } catch (NetmaskValueError) {}
 
      try {
-       ip_int ^= this.ALL_ONES;
-       return this._prefix_from_ip_int(ip_int);
+       ip_int ^= ALL_ONES;
+       return _prefix_from_ip_int(ip_int);
      } catch(Exception) {
        throw new NetmaskValueError.invalidNetmask(ip_str);
      }
@@ -810,8 +789,14 @@ abstract class _BaseNet {
          throw new NetmaskValueError.invalidPrefixLength(prefixlen_str);
      }
 
-     int prefixlen = int.parse(prefixlen_str);
-     if(!(0 <= prefixlen && prefixlen <= this.max_prefixlen)) {
+     int prefixlen;
+     try {
+       prefixlen = int.parse(prefixlen_str);
+     } catch(FormatException) {
+       throw new NetmaskValueError.invalidPrefixLength(prefixlen_str);
+     }
+
+     if(!(0 <= prefixlen && prefixlen <= max_prefixlen)) {
        throw new NetmaskValueError.invalidPrefixLength(prefixlen_str);
      }
 
@@ -826,17 +811,17 @@ abstract class _BaseNet {
 
    int _ip_int_from_prefix([int prefixlen]) {
      if(prefixlen == null) {
-       prefixlen = this.prefixlen;
+       prefixlen = prefixlen;
      }
 
-     return this.ALL_ONES ^ (this.ALL_ONES >> prefixlen);
+     return ALL_ONES ^ (ALL_ONES >> prefixlen);
    }
 
 
    /* The subnets which join to make the current subnet.
 
    In the case that self contains only one IP
-   (self._prefixlen == 32 for IPv4 or self._prefixlen == 128
+   (self.prefixlen == 32 for IPv4 or self.prefixlen == 128
    for IPv6), return a list with just ourself.
 
    Args:
@@ -888,7 +873,7 @@ abstract class _BaseNet {
      return new SubnetIterable(this, new_prefixlen);
    }
 
-   subnet({prefixlen_diff:1, new_prefix:null}) => this.iter_subnets(prefixlen_diff:prefixlen_diff, new_prefix:new_prefix).toList();
+   subnet({prefixlen_diff:1, new_prefix:null}) => iter_subnets(prefixlen_diff:prefixlen_diff, new_prefix:new_prefix).toList();
 
   /*
    * The supernet containing the current network.
@@ -905,31 +890,33 @@ abstract class _BaseNet {
    *       smaller network)
    */
 
-  IPv4Network supernet({int prefixlen_diff:1, int new_prefix}) {
-    if(this.prefixlen == 0) {
+   // The Python docstring claims it returns an IPv4Network object
+   // but this is not true, it returns IPv6Network objects as well.
+  _BaseNet supernet({int prefixlen_diff:1, int new_prefix}) {
+    if(prefixlen == 0) {
       return this;
     }
 
     if(new_prefix != null) {
-      if(new_prefix > this.prefixlen){
+      if(new_prefix > prefixlen){
         throw new ValueError('new prefix must be shorter');
       }
       if(prefixlen_diff != 1) {
         throw new ValueError('cannot set prefixlen_diff and new_prefix');
       }
 
-      prefixlen_diff = this.prefixlen - new_prefix;
+      prefixlen_diff = prefixlen - new_prefix;
     }
 
-    if(this.prefixlen - prefixlen_diff < 0) {
-      throw new ValueError('current prefixlen is ${this.prefixlen}, cannot have a prefixlen_diff of $prefixlen_diff');
+    if(prefixlen - prefixlen_diff < 0) {
+      throw new ValueError('current prefixlen is $prefixlen, cannot have a prefixlen_diff of $prefixlen_diff');
     }
 
-    return IPNetwork('${this.network}/${this.prefixlen - prefixlen_diff}', version: this.version);
+    return IPNetwork('$network/${prefixlen - prefixlen_diff}', version:version);
   }
 
   /// Return the network object with the host bits masked out
-  masked() => IPNetwork('${this.network}/${this.prefixlen}', version: this.version);
+  masked() => IPNetwork('$network/$prefixlen', version:version);
 }
 
 
@@ -939,12 +926,12 @@ class IPv4Address extends _BaseV4 with _BaseIP {
   IPv4Address(address) {
     if(address is int) {
       this._ip = address;
-      if(address < 0 || address > this.ALL_ONES) {
+      if(address < 0 || address > ALL_ONES) {
         throw new AddressValueError(address.toString());
       }
     //TODO: bytes input
     } else {
-      this._ip = this._ip_int_from_string(address.toString());
+      this._ip = _ip_int_from_string(address.toString());
     }
   }
 }
@@ -1046,9 +1033,9 @@ class IPv4Network extends _BaseV4 with IterableMixin<_BaseIP>, _BaseNet {
   IPv4Network(address, {bool strict: false}) {
     if(address is int) {
       this.ip = new IPv4Address(address);
-      this._ip = this.ip._ip;
-      this.prefixlen = this.max_prefixlen;
-      this.netmask = new IPv4Address(this.ALL_ONES);
+      this._ip = ip._ip;
+      this.prefixlen = max_prefixlen;
+      this.netmask = new IPv4Address(ALL_ONES);
       return;
     }
 
@@ -1057,121 +1044,23 @@ class IPv4Network extends _BaseV4 with IterableMixin<_BaseIP>, _BaseNet {
       throw new AddressValueError(address.toString());
     }
 
-    this._ip = this._ip_int_from_string(addr[0]);
-    this.ip = new IPv4Address(this._ip);
+    this._ip = _ip_int_from_string(addr[0]);
+    this.ip = new IPv4Address(_ip);
 
     if(addr.length == 2) {
       try {
-        this.prefixlen = this._prefix_from_prefix_string(addr[1]);
+        this.prefixlen = _prefix_from_prefix_string(addr[1]);
       } catch(NetmaskValueError) {
-        this.prefixlen = this._prefix_from_ip_string(addr[1]);
+        this.prefixlen = _prefix_from_ip_string(addr[1]);
       }
     } else {
-      this.prefixlen = this.max_prefixlen;
+      this.prefixlen = max_prefixlen;
     }
 
-    this.netmask = new IPv4Address(this._ip_int_from_prefix(this.prefixlen));
+    this.netmask = new IPv4Address(_ip_int_from_prefix(prefixlen));
 
-    if(strict && (this.ip != this.network)) {
+    if(strict && (ip != network)) {
         throw new ValueError('$ip has host bits set');
     }
   }
 }
-
-/*
-void main() {
-
-  var addr1 = IPNetwork('10.1.1.0/24');
-  var addr2 = IPNetwork('10.1.1.0/26');
-  var addr3 = IPNetwork('10.2.1.0/24');
-  var addr4 = IPAddress('10.1.1.0');
-
-  print(addr1.address_exclude(addr2));
-
-  var ipv4 = new IPv4Network('1.2.3.4/24');
-  var ipv42 = new IPv4Network('4.4.4.4/24');
-  var s = [ipv42, ipv4];
-  s.sort((x,y) => x.compare_networks(y));
-  print(s);
-
-
-  var ipv4net = IPNetwork('1.2.3.4');
-  var ipv4addr = IPAddress('1.2.3.4');
-
-  print('${ipv4net.runtimeType}');
-  print('${ipv4addr.runtimeType}');
-
-  var ipv4 = new IPv4Network('1.2.3.4/24');
-  var ipv42 = new IPv4Network('4.4.4.4/24');
-  //ipv4.subnet(prefixlen_diff:2);
-
-  //List<int> t = [1,2,3,4,5];
-  //print(t[1]);
-
-  var s = [ipv42, ipv4];
-  s.sort((x,y) => x._ip.compareTo(y._ip));
-  //print(s);
-
-  var ip1 = new IPv4Address('1.1.1.0');
-  var ip2 = new IPv4Address('1.1.1.1');
-  var ip3 = new IPv4Address('1.1.1.2');
-  var ip4 = new IPv4Address('1.1.1.3');
-  var ip5 = new IPv4Address('1.1.1.4');
-  var ip6 = new IPv4Address('1.1.1.0');
-
-  // test only IP networks
-  ip1 = new IPv4Network('1.1.0.0/24');
-  ip2 = new IPv4Network('1.1.1.0/24');
-  ip3 = new IPv4Network('1.1.2.0/24');
-  ip4 = new IPv4Network('1.1.3.0/24');
-  ip5 = new IPv4Network('1.1.4.0/24');
-  // stored in no particular order b/c we want CollapseAddr to call [].sort
-  ip6 = new IPv4Network('1.1.0.0/22');
-  // check that addreses are subsumed properly.
-  var collapsed = collapse_address_list([ip1, ip2, ip3, ip4, ip5, ip6]);
-  print(collapsed);
-
-  // Check that addreses are subsumed properly.
-  //var collapsed = collapse_address_list([ip1, ip2, ip3, ip4, ip5, ip6]);
-  //print(collapsed);
-
-  var ip1 = IPAddress('1.1.1.0');
-  var ip2 = IPAddress('1.1.1.255');
-  var network = IPNetwork('1.1.1.0/24');
-
-  // test a /24 is sumamrized properly
-  var summary = summarize_address_range(ip1, ip2);
-  var s0 = summary[0];
-  print(summary);
-  print(s0);
-  print(s0 == network);
-
-  var subnets1 = ipv4.subnet(2).map((n) => n.toString()).toList();
-
-  print('as string ${ipv4.toString()}');
-
-  for(var i in ipv4.subnet()) {
-    print(i.runtimeType.toString());
-    print(i);
-  }
-
-  for(var i in ipv4.iter_subnets()) {
-    print(i.runtimeType.toString());
-    print(i);
-  }
-
-
-  //print(ipv4.subnet().map((e) => e.toString()));
-  //print(ipv4.subnet(prefixlen_diff:3).toList());
-
-
-  var list = IPNetwork('2.0.0.0/31');
-  for(var h in list) {
-    print(h);
-  }
-  print('list bcast ${list.broadcast.toInt()}');
-  print('list network ${list.network.toInt()}');
-  print('iterhosts ${list.iterhosts()}');
-
-}
-*/
