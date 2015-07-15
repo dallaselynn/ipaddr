@@ -460,6 +460,10 @@ abstract class _BaseNet {
       throw new VersionError('$this and $other are not of the same version');
     }
 
+    if(!(other is _BaseNet)) {
+      throw new VersionError('Networks can only be compared to each other');
+    }
+    
     if(network != other.network) {
       return network < other.network;
     }

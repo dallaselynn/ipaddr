@@ -455,8 +455,8 @@ void main() {
     unsorted.sort((x,y) => x.compare_networks(y));
     expect(sorted, equals(unsorted));
 
-    expect(() => ip1 < IPAddress('10.10.10.0'), throwsTypeError);
-    expect(() => ip2 < IPAddress('10.10.10.0'), throwsTypeError);
+    expect(() => ip1 < IPAddress('10.10.10.0'), throwsVersionError);
+    expect(() => ip2 < IPAddress('10.10.10.0'), throwsVersionError);
 
     // <=, >=
     expect(IPNetwork('1.1.1.1') <= IPNetwork('1.1.1.1'), isTrue);
