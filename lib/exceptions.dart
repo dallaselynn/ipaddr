@@ -12,7 +12,6 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 
-
 part of ipaddr;
 
 /// Exceptions are considered conditions that you can plan ahead for and catch.
@@ -23,10 +22,10 @@ class NetmaskValueError implements Exception {
   final String message;
 
   NetmaskValueError._(this.message);
-  NetmaskValueError.invalidPrefixLength(prefixlen): this._(
-      '$prefixlen is not a valid prefix length');
-  NetmaskValueError.invalidNetmask(netmask): this._(
-      '$netmask is not a valid netmask');
+  NetmaskValueError.invalidPrefixLength(prefixlen)
+      : this._('$prefixlen is not a valid prefix length');
+  NetmaskValueError.invalidNetmask(netmask)
+      : this._('$netmask is not a valid netmask');
 
   String toString() => "NetmaskValueError: $message";
 }

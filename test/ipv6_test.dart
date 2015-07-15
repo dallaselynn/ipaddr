@@ -5,11 +5,12 @@ import 'dart:math';
 import 'package:unittest/unittest.dart';
 import 'package:ipaddr/ipaddr.dart';
 
-
 void main() {
   final throwsValueError = throwsA(new isInstanceOf<ValueError>());
-  final throwsAddressValueError = throwsA(new isInstanceOf<AddressValueError>());
-  final throwsNetmaskValueError = throwsA(new isInstanceOf<NetmaskValueError>());
+  final throwsAddressValueError =
+      throwsA(new isInstanceOf<AddressValueError>());
+  final throwsNetmaskValueError =
+      throwsA(new isInstanceOf<NetmaskValueError>());
   final throwsVersionError = throwsA(new isInstanceOf<VersionError>());
 
   var ipv6 = new IPv6Network('2001:658:22a:cafe:200:0:0:1/64');
@@ -21,8 +22,10 @@ void main() {
   });
 
   test('address int math', () {
-    expect(new IPv6Address('::1') + (pow(2, 16) - 2), equals(new IPv6Address('::ffff')));
-    expect(new IPv6Address('::ffff') - (pow(2, 16) - 2), equals(new IPv6Address('::1')));
+    expect(new IPv6Address('::1') + (pow(2, 16) - 2),
+        equals(new IPv6Address('::ffff')));
+    expect(new IPv6Address('::ffff') - (pow(2, 16) - 2),
+        equals(new IPv6Address('::1')));
   });
 
   test('invalid strings', () {
@@ -63,18 +66,21 @@ void main() {
     expect(() => new IPv6Network(''), throwsAddressValueError);
     expect(() => new IPv6Network('google.com'), throwsAddressValueError);
     expect(() => new IPv6Network('1.2.3.4'), throwsAddressValueError);
-    expect(() => new IPv6Network('cafe:cafe::/128/190'), throwsAddressValueError);
+    expect(
+        () => new IPv6Network('cafe:cafe::/128/190'), throwsAddressValueError);
     expect(() => new IPv6Network('1234:axy::b'), throwsAddressValueError);
 
     expect(() => new IPv6Address('1234:axy::b'), throwsAddressValueError);
     expect(() => new IPv6Address('2001:db8:::1'), throwsAddressValueError);
     expect(() => new IPv6Address('2001:888888::1'), throwsAddressValueError);
     expect(() => new IPv6Address(['2001:db8::']), throwsAddressValueError);
-    expect(() => new IPv6Address(['2001:db8::',32,0]), throwsAddressValueError);
+    expect(
+        () => new IPv6Address(['2001:db8::', 32, 0]), throwsAddressValueError);
   });
 
   test('Get Network', () {
-    expect(ipv6.network.toInt(), equals(42540616829182469433403647294022090752));
+    expect(
+        ipv6.network.toInt(), equals(42540616829182469433403647294022090752));
     expect(ipv6.network.toString(), equals('2001:658:22a:cafe::'));
     expect(ipv6.hostmask.toString(), equals('::ffff:ffff:ffff:ffff'));
   });
@@ -98,7 +104,8 @@ void main() {
   });
 
   test('Get Netmask', () {
-    expect(ipv6.netmask.toInt(), equals(340282366920938463444927863358058659840));
+    expect(
+        ipv6.netmask.toInt(), equals(340282366920938463444927863358058659840));
     expect(ipv6.prefixlen, equals(64));
   });
 
@@ -109,8 +116,10 @@ void main() {
   });
 
   test('Get Broadcast', () {
-    expect(ipv6.broadcast.toInt(), equals(42540616829182469451850391367731642367));
-    expect(ipv6.broadcast.toString(), equals('2001:658:22a:cafe:ffff:ffff:ffff:ffff'));
+    expect(
+        ipv6.broadcast.toInt(), equals(42540616829182469451850391367731642367));
+    expect(ipv6.broadcast.toString(),
+        equals('2001:658:22a:cafe:ffff:ffff:ffff:ffff'));
   });
 
   test('Get Prefixlen', () {
@@ -120,18 +129,22 @@ void main() {
   test('Get Supernet', () {
     expect(ipv6.supernet().prefixlen, equals(63));
     expect(ipv6.supernet().network.toString(), equals('2001:658:22a:cafe::'));
-    expect(new IPv6Network('::0/0').supernet(), equals(new IPv6Network('::0/0')));
+    expect(
+        new IPv6Network('::0/0').supernet(), equals(new IPv6Network('::0/0')));
   });
 
   test('Get Supernet 3', () {
     expect(ipv6.supernet(prefixlen_diff: 3).prefixlen, equals(61));
-    expect(ipv6.supernet(prefixlen_diff: 3).network.toString(), equals('2001:658:22a:caf8::'));
+    expect(ipv6.supernet(prefixlen_diff: 3).network.toString(),
+        equals('2001:658:22a:caf8::'));
   });
 
   test('Get Supernet 4', () {
-    expect(() => ipv6.supernet(prefixlen_diff: 2, new_prefix: 1), throwsValueError);
+    expect(() => ipv6.supernet(prefixlen_diff: 2, new_prefix: 1),
+        throwsValueError);
     expect(() => ipv6.supernet(new_prefix: 65), throwsValueError);
-    expect(ipv6.supernet(prefixlen_diff: 2), equals(ipv6.supernet(new_prefix: 62)));
+    expect(ipv6.supernet(prefixlen_diff: 2),
+        equals(ipv6.supernet(new_prefix: 62)));
   });
 
   test('Iter Subnets', () {
@@ -139,9 +152,11 @@ void main() {
   });
 
   test('Fancy Subnetting', () {
-    expect(ipv6.subnet(prefixlen_diff: 4).toList(), equals(ipv6.subnet(new_prefix: 68).toList()));
+    expect(ipv6.subnet(prefixlen_diff: 4).toList(),
+        equals(ipv6.subnet(new_prefix: 68).toList()));
     expect(() => ipv6.subnet(new_prefix: 63), throwsValueError);
-    expect(() => ipv6.subnet(prefixlen_diff: 4, new_prefix: 68), throwsValueError);
+    expect(
+        () => ipv6.subnet(prefixlen_diff: 4, new_prefix: 68), throwsValueError);
   });
 
   test('Get Subnet', () {
@@ -151,16 +166,22 @@ void main() {
   test('get subnet for single 128', () {
     var ip = new IPv6Network('::1/128');
     var subnets1 = ip.subnet().map((n) => n.toString()).toList();
-    var subnets2 = ip.subnet(prefixlen_diff: 2).map((n) => n.toString()).toList();
+    var subnets2 =
+        ip.subnet(prefixlen_diff: 2).map((n) => n.toString()).toList();
 
     expect(subnets1, equals(['::1/128']));
     expect(subnets1, equals(subnets2));
   });
 
   test('Subnet 2', () {
-    var ipsv6 = ipv6.subnet(prefixlen_diff: 2).map((n) => n.toString()).toList();
-    expect(ipsv6, equals(['2001:658:22a:cafe::/66', '2001:658:22a:cafe:4000::/66', '2001:658:22a:cafe:8000::/66', '2001:658:22a:cafe:c000::/66']));
-
+    var ipsv6 =
+        ipv6.subnet(prefixlen_diff: 2).map((n) => n.toString()).toList();
+    expect(ipsv6, equals([
+      '2001:658:22a:cafe::/66',
+      '2001:658:22a:cafe:4000::/66',
+      '2001:658:22a:cafe:8000::/66',
+      '2001:658:22a:cafe:c000::/66'
+    ]));
   });
 
   test('subnet fails for large CIDR diff', () {
@@ -191,19 +212,20 @@ void main() {
   });
 
   test('Good Netmask IPv6', () {
-    expect(new IPv6Network('2001:db8::/32').toString(), equals('2001:db8::/32'));
+    expect(
+        new IPv6Network('2001:db8::/32').toString(), equals('2001:db8::/32'));
 
     for (int i in new Iterable.generate(129)) {
       String net_str = '::/$i';
       expect(new IPv6Network(net_str).toString(), equals(net_str));
 
       /// Parse some 2-tuple inputs.
-      expect(new IPv6Network([0,i]).toString(), equals(net_str));
-      expect(new IPv6Network(['::',i]).toString(), equals(net_str));
+      expect(new IPv6Network([0, i]).toString(), equals(net_str));
+      expect(new IPv6Network(['::', i]).toString(), equals(net_str));
       expect(new IPv6Network([new IPv6Address('::'), i]).toString(),
           equals(net_str));
 
-      /// zero prefix is treated as decimal   
+      /// zero prefix is treated as decimal
       expect(new IPv6Network('::/0$i').toString(), equals(net_str));
     }
   });
@@ -211,23 +233,23 @@ void main() {
   test('Bad Netmask', () {
     expect(() => new IPv6Network('::1/'), throwsNetmaskValueError);
     expect(() => new IPv6Network('::1/-1'), throwsNetmaskValueError);
-    expect(() => new IPv6Network(['::1','-1']), throwsNetmaskValueError);
+    expect(() => new IPv6Network(['::1', '-1']), throwsNetmaskValueError);
     expect(() => new IPv6Network('::1/+1'), throwsNetmaskValueError);
     expect(() => new IPv6Network('::1/0x1'), throwsNetmaskValueError);
     expect(() => new IPv6Network('::1/129'), throwsNetmaskValueError);
-    expect(() => new IPv6Network(['::1','129']), throwsNetmaskValueError);
+    expect(() => new IPv6Network(['::1', '129']), throwsNetmaskValueError);
     expect(() => new IPv6Network('::1/1.2.3.4'), throwsNetmaskValueError);
     expect(() => new IPv6Network('::/::'), throwsNetmaskValueError);
     /// List constructors only accept integer prefixes at the moment
-    expect(() => new IPv6Network(['::','0']), throwsNetmaskValueError);
+    expect(() => new IPv6Network(['::', '0']), throwsNetmaskValueError);
   });
-  
+
   test('copy constructors', () {
     var v6addr = new BadStringIPv6Address('2001:db8::');
     expect(v6addr.toString(), equals('<IPv6>'));
     expect(v6addr, equals(new IPv6Address(v6addr)));
   });
-  
+
   test('nth', () {
     expect(ipv6[5].toString(), equals('2001:658:22a:cafe::5'));
   });
@@ -278,9 +300,11 @@ void main() {
 
     // test an IPv6 range that isn't on a network byte boundary
     ip2 = IPAddress('2::');
-    expect(summarize_address_range(ip1, ip2), equals([IPNetwork('1::/16'), IPNetwork('2::/128')]));
+    expect(summarize_address_range(ip1, ip2),
+        equals([IPNetwork('1::/16'), IPNetwork('2::/128')]));
 
-    expect(() => summarize_address_range(IPAddress('::'), IPNetwork('1.1.0.0')), throwsVersionError);
+    expect(() => summarize_address_range(IPAddress('::'), IPNetwork('1.1.0.0')),
+        throwsVersionError);
   });
 
   test('address comparison', () {
@@ -306,7 +330,7 @@ void main() {
 
   test('strict networks', () {
     expect(() => IPNetwork('::1/120', strict: true), throwsValueError);
-    expect(() => IPNetwork(['::1',120], strict: true), throwsValueError);
+    expect(() => IPNetwork(['::1', 120], strict: true), throwsValueError);
   });
 
   test('Embedded IPv4', () {
@@ -317,7 +341,8 @@ void main() {
 
     var v4mapped_ipv6 = new IPv6Network('::ffff:$ipv4_string');
     expect(v4mapped_ipv6.ip != ipv4.ip, isTrue);
-    expect(() => new IPv6Network('2001:1.1.1.1:1.1.1.1'), throwsAddressValueError);
+    expect(
+        () => new IPv6Network('2001:1.1.1.1:1.1.1.1'), throwsAddressValueError);
   });
 
   test('ip version', () {
@@ -335,7 +360,6 @@ void main() {
     expect(ipv6net.runtimeType, equals(IPv6Network));
     expect(ipv6addr.runtimeType, equals(IPv6Address));
   });
-
 
   test('Reserved IPv6', () {
     expect(IPNetwork('ffff::').is_multicast, isTrue);
@@ -400,9 +424,11 @@ void main() {
   });
 
   test('IPv4 Mapped', () {
-    expect(IPAddress('::ffff:192.168.1.1').ipv4_mapped, equals(IPAddress('192.168.1.1')));
+    expect(IPAddress('::ffff:192.168.1.1').ipv4_mapped,
+        equals(IPAddress('192.168.1.1')));
     expect(IPAddress('::c0a8:101').ipv4_mapped, equals(null));
-    expect(IPAddress('::ffff:c0a8:101').ipv4_mapped, equals(IPAddress('192.168.1.1')));
+    expect(IPAddress('::ffff:c0a8:101').ipv4_mapped,
+        equals(IPAddress('192.168.1.1')));
   });
 
   test('hash', () {
@@ -456,8 +482,10 @@ void main() {
     var addr1 = new IPv6Network('2001::1');
     var addr2 = new IPv6Address('2001:0:5ef5:79fd:0:59d:a0e5:ba1');
 
-    expect(addr1.exploded, equals('2001:0000:0000:0000:0000:0000:0000:0001/128'));
-    expect(new IPv6Network('::1/128').exploded, equals('0000:0000:0000:0000:0000:0000:0000:0001/128'));
+    expect(
+        addr1.exploded, equals('2001:0000:0000:0000:0000:0000:0000:0001/128'));
+    expect(new IPv6Network('::1/128').exploded,
+        equals('0000:0000:0000:0000:0000:0000:0000:0001/128'));
     // issue 77
     expect(addr2.exploded, equals('2001:0000:5ef5:79fd:0000:059d:a0e5:0ba1'));
   });
@@ -471,9 +499,11 @@ void main() {
   });
 
   test('With Star', () {
-    expect(ipv6.with_prefixlen.toString(), equals('2001:658:22a:cafe:200::1/64'));
+    expect(
+        ipv6.with_prefixlen.toString(), equals('2001:658:22a:cafe:200::1/64'));
     expect(ipv6.with_netmask.toString(), equals('2001:658:22a:cafe:200::1/64'));
-    expect(ipv6.with_hostmask.toString(), equals('2001:658:22a:cafe:200::1/::ffff:ffff:ffff:ffff'));
+    expect(ipv6.with_hostmask.toString(),
+        equals('2001:658:22a:cafe:200::1/::ffff:ffff:ffff:ffff'));
   });
 
   test('Teredo', () {
@@ -487,7 +517,10 @@ void main() {
     expect(IPAddress(bad_addr).teredo, isNull);
 
     teredo_addr = new IPv6Address('2001:0:5ef5:79fd:0:59d:a0e5:ba1');
-    expect([new IPv4Address('94.245.121.253'), new IPv4Address('95.26.244.94')], equals(teredo_addr.teredo));
+    expect([
+      new IPv4Address('94.245.121.253'),
+      new IPv4Address('95.26.244.94')
+    ], equals(teredo_addr.teredo));
   });
 
   test('Six to Four', () {
@@ -498,8 +531,10 @@ void main() {
   });
 
   test('IPv6 Address Too Large', () {
-    expect(new IPv6Address('::FFFF:192.0.2.1'), equals(new IPv6Address('::FFFF:c000:201')));
-    expect(new IPv6Address('FFFF::192.0.2.1'), equals(new IPv6Address('FFFF::c000:201')));
+    expect(new IPv6Address('::FFFF:192.0.2.1'),
+        equals(new IPv6Address('::FFFF:c000:201')));
+    expect(new IPv6Address('FFFF::192.0.2.1'),
+        equals(new IPv6Address('FFFF::c000:201')));
   });
 }
 

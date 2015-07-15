@@ -51,7 +51,8 @@ abstract class _BaseV6 {
 
     int parts_hi, parts_lo, parts_skipped;
 
-    int skip_index = parts.sublist(1, parts.length - 1).indexOf(''); // -1 == None
+    int skip_index =
+        parts.sublist(1, parts.length - 1).indexOf(''); // -1 == None
     skip_index += 1; // set to its index in the actual list not the sublist...
 
     // parts_hi is the number of parts to copy from above/before the '::'
@@ -115,7 +116,6 @@ abstract class _BaseV6 {
       throw new AddressValueError(ip_str);
     }
   }
-
 
   /**
    * Convert an IPv6 hextet string into an integer.
@@ -188,7 +188,8 @@ abstract class _BaseV6 {
     }
 
     if (best_doublecolon_len > 1) {
-      int best_doublecolon_end = (best_doublecolon_start + best_doublecolon_len);
+      int best_doublecolon_end =
+          (best_doublecolon_start + best_doublecolon_len);
       //  for zeroes at the end of the address
       if (best_doublecolon_end == hextets.length) {
         hextets.add('');
@@ -201,7 +202,6 @@ abstract class _BaseV6 {
 
     return hextets;
   }
-
 
   /**
    * Turns a 128-bit integer into hexadecimal notation.
@@ -233,7 +233,8 @@ abstract class _BaseV6 {
     List<String> hextets = [];
 
     for (int x in [0, 4, 8, 12, 16, 20, 24, 28]) {
-      hextets.add(int.parse(hex_str.substring(x, x + 4), radix: 16).toRadixString(16));
+      hextets.add(
+          int.parse(hex_str.substring(x, x + 4), radix: 16).toRadixString(16));
     }
 
     return _compress_hextets(hextets).join(':');
@@ -284,7 +285,23 @@ abstract class _BaseV6 {
    * reserved IPv6 Network ranges.
    */
   bool get is_reserved {
-    final Set reserved = new Set.from(['::/8', '100::/8', '200::/7', '400::/6', '800::/5', '1000::/4', '4000::/3', '6000::/3', '8000::/3', 'A000::/3', 'C000::/3', 'E000::/4', 'F000::/5', 'F800::/6', 'FE00::/9']);
+    final Set reserved = new Set.from([
+      '::/8',
+      '100::/8',
+      '200::/7',
+      '400::/6',
+      '800::/5',
+      '1000::/4',
+      '4000::/3',
+      '6000::/3',
+      '8000::/3',
+      'A000::/3',
+      'C000::/3',
+      'E000::/4',
+      'F000::/5',
+      'F800::/6',
+      'FE00::/9'
+    ]);
 
     return reserved.any((e) => new IPv6Network(e).contains(this));
   }
@@ -351,7 +368,8 @@ abstract class _BaseV6 {
    * If the IPv6 Address is a v4 mapped address return the IPv4 mapped address
    * otherwise return null
    */
-  get ipv4_mapped => ((_ip >> 32) != 0xFFFF) ? null : new IPv4Address(_ip & 0xFFFFFFFF);
+  get ipv4_mapped =>
+      ((_ip >> 32) != 0xFFFF) ? null : new IPv4Address(_ip & 0xFFFFFFFF);
 
   /**
    * Tuple of embedded teredo IPs.
@@ -365,17 +383,20 @@ abstract class _BaseV6 {
       return null;
     }
 
-    return new UnmodifiableListView([new IPv4Address((_ip >> 64) & 0xFFFFFFFF), new IPv4Address(~_ip & 0xFFFFFFFF)]);
+    return new UnmodifiableListView([
+      new IPv4Address((_ip >> 64) & 0xFFFFFFFF),
+      new IPv4Address(~_ip & 0xFFFFFFFF)
+    ]);
   }
 
   /**
    * Return the IPv4 6to4 embedded address or null if the address
    * doesn't appear to contain a 6to4 embedded address.
    */
-  get sixtofour => ((_ip >> 112) != 0x2002) ? null : new IPv4Address((_ip >> 80) & 0xFFFFFFFF);
-
+  get sixtofour => ((_ip >> 112) != 0x2002)
+      ? null
+      : new IPv4Address((_ip >> 80) & 0xFFFFFFFF);
 }
-
 
 class IPv6Address extends Object with _BaseV6, _BaseIP {
   int _ip;
@@ -389,11 +410,11 @@ class IPv6Address extends Object with _BaseV6, _BaseIP {
       return;
     }
 
-    if(address is IPv6Address) {
+    if (address is IPv6Address) {
       this._ip = address._ip;
       return;
     }
-    
+
     // TODO: bytes
 
     // Assume input argument to be string or any object representation
@@ -404,13 +425,13 @@ class IPv6Address extends Object with _BaseV6, _BaseIP {
   }
 }
 
-
 class IPv6Network extends _BaseV6 with IterableMixin<_BaseIP>, _BaseNet {
   int _ip, prefixlen;
   IPv6Address ip, netmask;
   Map<String, Object> _cache = {};
 
-  Iterator<_BaseIP> get iterator => new NetworkIterator(network.toInt(), broadcast.toInt(), version);
+  Iterator<_BaseIP> get iterator =>
+      new NetworkIterator(network.toInt(), broadcast.toInt(), version);
 
   /* Generate Iterator over usable hosts in a network.
    *
@@ -419,8 +440,11 @@ class IPv6Network extends _BaseV6 with IterableMixin<_BaseIP>, _BaseNet {
    *
    */
   iterhosts() {
-    int n = prefixlen == max_prefixlen - 1 ? network.toInt() : network.toInt() + 1;
-    int b = prefixlen == max_prefixlen - 1 ? broadcast.toInt() : broadcast.toInt() - 1;
+    int n =
+        prefixlen == max_prefixlen - 1 ? network.toInt() : network.toInt() + 1;
+    int b = prefixlen == max_prefixlen - 1
+        ? broadcast.toInt()
+        : broadcast.toInt() - 1;
 
     return new NetworkIterable(n, b, version);
   }
@@ -434,11 +458,11 @@ class IPv6Network extends _BaseV6 with IterableMixin<_BaseIP>, _BaseNet {
       return;
     }
 
-    if(address is List) {
-      if(address.length != 2) {
+    if (address is List) {
+      if (address.length != 2) {
         throw new AddressValueError(address);
       }
-      
+
       this.ip = new IPv6Address(address[0]);
       this._ip = this.ip._ip;
       this.prefixlen = _prefix_from_prefix_int(address[1]);
@@ -460,7 +484,7 @@ class IPv6Network extends _BaseV6 with IterableMixin<_BaseIP>, _BaseNet {
         this.prefixlen = max_prefixlen;
       }
     }
-    
+
     this.netmask = new IPv6Address(_ip_int_from_prefix(prefixlen));
 
     if (strict) {
