@@ -792,6 +792,26 @@ abstract class _BaseNet {
      }
    }
 
+   // Validate and return a prefix length integer.
+   //
+   // [prefixlen] is an integer containing the prefix length.
+   // Returns the input, possibly converted from long to int.
+   //
+   // Raises [NetmaskValueError] if the input is not an integer, or out of range.
+
+   int _prefix_from_prefix_int(int prefixlen) {
+     if(prefixlen is! int) {
+       throw new NetmaskValueError._('$prefixlen is not an integer');
+     }
+
+     if(!(0 <= prefixlen && prefixlen <= max_prefixlen)) {
+         throw new NetmaskValueError.invalidPrefixLength(prefixlen);
+     }
+
+     return prefixlen;
+   }
+  
+  
    /**
     * Turn a prefix length string into an integer.
     *
@@ -814,11 +834,7 @@ abstract class _BaseNet {
        throw new NetmaskValueError.invalidPrefixLength(prefixlen_str);
      }
 
-     if(!(0 <= prefixlen && prefixlen <= max_prefixlen)) {
-       throw new NetmaskValueError.invalidPrefixLength(prefixlen_str);
-     }
-
-     return prefixlen;
+     return _prefix_from_prefix_int(prefixlen);
    }
 
    /**
@@ -948,6 +964,8 @@ class IPv4Address extends _BaseV4 with _BaseIP {
         throw new AddressValueError(address.toString());
       }
     //TODO: bytes input
+    } else if(address is IPv4Address) {
+      this._ip = address._ip;
     } else {
       this._ip = _ip_int_from_string(address.toString());
     }
@@ -1049,7 +1067,7 @@ class IPv4Network extends _BaseV4 with IterableMixin<_BaseIP>, _BaseNet {
   }
 
   IPv4Network(address, {bool strict: false}) {
-    if(address is int) {
+    if(address is int || address is IPv4Address) {
       this.ip = new IPv4Address(address);
       this._ip = ip._ip;
       this.prefixlen = max_prefixlen;
@@ -1057,24 +1075,34 @@ class IPv4Network extends _BaseV4 with IterableMixin<_BaseIP>, _BaseNet {
       return;
     }
 
-    List<String> addr = address.toString().split('/');
-    if(addr.length > 2) {
-      throw new AddressValueError(address.toString());
-    }
-
-    this._ip = _ip_int_from_string(addr[0]);
-    this.ip = new IPv4Address(_ip);
-
-    if(addr.length == 2) {
-      try {
-        this.prefixlen = _prefix_from_prefix_string(addr[1]);
-      } catch(NetmaskValueError) {
-        this.prefixlen = _prefix_from_ip_string(addr[1]);
+    if(address is List) {
+      if(address.length != 2) {
+        throw new AddressValueError(address);
       }
-    } else {
-      this.prefixlen = max_prefixlen;
-    }
+      
+      this.ip = new IPv4Address(address[0]);
+      this._ip = this.ip._ip;
+      this.prefixlen = _prefix_from_prefix_int(address[1]);
+    } else {    
+      List<String> addr = address.toString().split('/');
+      if(addr.length > 2) {
+        throw new AddressValueError(address.toString());
+      }
 
+      this._ip = _ip_int_from_string(addr[0]);
+      this.ip = new IPv4Address(_ip);
+
+      if(addr.length == 2) {
+        try {
+          this.prefixlen = _prefix_from_prefix_string(addr[1]);
+        } catch(NetmaskValueError) {
+          this.prefixlen = _prefix_from_ip_string(addr[1]);
+        }
+      } else {
+        this.prefixlen = max_prefixlen;
+      }
+    }
+    
     this.netmask = new IPv4Address(_ip_int_from_prefix(prefixlen));
 
     if(strict && (ip != network)) {

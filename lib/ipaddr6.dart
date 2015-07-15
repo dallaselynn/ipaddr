@@ -389,6 +389,11 @@ class IPv6Address extends Object with _BaseV6, _BaseIP {
       return;
     }
 
+    if(address is IPv6Address) {
+      this._ip = address._ip;
+      return;
+    }
+    
     // TODO: bytes
 
     // Assume input argument to be string or any object representation
@@ -421,7 +426,7 @@ class IPv6Network extends _BaseV6 with IterableMixin<_BaseIP>, _BaseNet {
   }
 
   IPv6Network(var address, {strict: false}) {
-    if (address is int) {
+    if (address is int || address is IPv6Address) {
       this.ip = new IPv6Address(address);
       this._ip = ip._ip;
       this.prefixlen = max_prefixlen;
@@ -429,23 +434,33 @@ class IPv6Network extends _BaseV6 with IterableMixin<_BaseIP>, _BaseNet {
       return;
     }
 
-    //  Assume input argument to be string or any object representation
-    //  which converts into a formatted IP prefix string.
-    List<String> addr = address.toString().split('/');
-
-    if (addr.length > 2) {
-      throw new AddressValueError(address);
-    }
-
-    this._ip = _ip_int_from_string(addr[0]);
-    this.ip = new IPv6Address(this._ip);
-
-    if (addr.length == 2) {
-      this.prefixlen = _prefix_from_prefix_string(addr[1]);
+    if(address is List) {
+      if(address.length != 2) {
+        throw new AddressValueError(address);
+      }
+      
+      this.ip = new IPv6Address(address[0]);
+      this._ip = this.ip._ip;
+      this.prefixlen = _prefix_from_prefix_int(address[1]);
     } else {
-      this.prefixlen = max_prefixlen;
-    }
+      //  Assume input argument to be string or any object representation
+      //  which converts into a formatted IP prefix string.
+      List<String> addr = address.toString().split('/');
 
+      if (addr.length > 2) {
+        throw new AddressValueError(address);
+      }
+
+      this._ip = _ip_int_from_string(addr[0]);
+      this.ip = new IPv6Address(this._ip);
+
+      if (addr.length == 2) {
+        this.prefixlen = _prefix_from_prefix_string(addr[1]);
+      } else {
+        this.prefixlen = max_prefixlen;
+      }
+    }
+    
     this.netmask = new IPv6Address(_ip_int_from_prefix(prefixlen));
 
     if (strict) {

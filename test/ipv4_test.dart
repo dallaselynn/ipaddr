@@ -17,6 +17,7 @@
 
 library ipv4_test;
 
+import 'dart:mirrors';
 import 'dart:math';
 import 'package:unittest/unittest.dart';
 import 'package:ipaddr/ipaddr.dart';
@@ -111,6 +112,8 @@ void main() {
     expect(() => new IPv4Network(''), throwsA(new isInstanceOf<AddressValueError>()));
     expect(() => new IPv4Network('google.com'), throwsA(new isInstanceOf<AddressValueError>()));
     expect(() => new IPv4Network('::1.2.3.4'), throwsA(new isInstanceOf<AddressValueError>()));
+    expect(() => new IPv4Network(['1.2.3.0']), throwsA(new isInstanceOf<AddressValueError>()));
+    expect(() => new IPv4Network(['1.2.3.0',24,0]), throwsA(new isInstanceOf<AddressValueError>()));
   });
 
   test('get network', () {
@@ -254,6 +257,12 @@ void main() {
       var net = new IPv4Network(net_str);
       expect(net.toString(), equals(net_str));
 
+      // parse some 2 element List inputs
+      expect(new IPv4Network([0,i]).toString(), equals(net_str));
+      expect(new IPv4Network(['0.0.0.0', i]).toString(), equals(net_str));
+      expect(new IPv4Network([new IPv4Address('0.0.0.0'), i]).toString(),
+          equals(net_str));
+      
       // generate and re-parse the expanded netmask
       expect(new IPv4Network('0.0.0.0/${net.netmask}').toString(), equals(net_str));
 
@@ -273,17 +282,28 @@ void main() {
   test('bad netmask', () {
     expect(() => new IPv4Network('1.2.3.4/'), throwsNetmaskValueError);
     expect(() => new IPv4Network('1.2.3.4/-1'), throwsNetmaskValueError);
+    expect(() => new IPv4Network(['1.2.3.4',-1]), throwsNetmaskValueError);
     expect(() => new IPv4Network('1.2.3.4/+1'), throwsNetmaskValueError);
     expect(() => new IPv4Network('1.2.3.4/0x1'), throwsNetmaskValueError);
     expect(() => new IPv4Network('1.2.3.4/33'), throwsNetmaskValueError);
+    expect(() => new IPv4Network(['1.2.3.4',33]), throwsNetmaskValueError);
     expect(() => new IPv4Network('1.2.3.4/254.254.255.256'), throwsNetmaskValueError);
     expect(() => new IPv4Network('1.1.1.1/240.255.0.0'), throwsNetmaskValueError);
     expect(() => new IPv4Network('1.1.1.1/255.254.128.0'), throwsNetmaskValueError);
     expect(() => new IPv4Network('1.1.1.1/0.1.127.255'), throwsNetmaskValueError);
     expect(() => new IPv4Network('1.2.3.4/1.a.2.3'), throwsNetmaskValueError);
     expect(() => new IPv4Network('1.1.1.1/::'), throwsNetmaskValueError);
+    /// List constructors only accept integer prefixes at the moment
+    expect(() => new IPv4Network(['0.0.0.0','0']), throwsNetmaskValueError);
   });
 
+  test('copy constructors', () {
+    var v4addr = new BadStringIPv4Address('1.2.3.4');
+    expect(v4addr.toString(), equals('<IPv4>'));
+    expect(v4addr is IPv4Address, isTrue);
+    expect(v4addr, equals(new IPv4Address(v4addr)));
+  });
+  
   test('nth', () {
     expect(ipv4[5].toString(), equals('1.2.3.5'));
     expect(() => ipv4[256], throwsRangeError);
@@ -466,6 +486,7 @@ void main() {
 
   test('strict networks', () {
     expect(() => IPNetwork('192.168.1.1/24', strict:true), throwsValueError);
+    expect(() => IPNetwork(['192.168.1.1', 24], strict:true), throwsValueError);
   });
 
   test('overlaps', () {
@@ -580,6 +601,12 @@ void main() {
       expect(ipv4.with_netmask, equals("1.2.3.4/255.255.255.0"));
       expect(ipv4.with_hostmask, equals("1.2.3.4/0.0.0.255"));
   });
-
-
 }
+
+
+/// test class with unparseable string representation
+class BadStringIPv4Address extends IPv4Address {
+  BadStringIPv4Address(address) : super(address);
+  @override String toString() => '<IPv4>';
+}
+

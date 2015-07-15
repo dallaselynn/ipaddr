@@ -69,6 +69,8 @@ void main() {
     expect(() => new IPv6Address('1234:axy::b'), throwsAddressValueError);
     expect(() => new IPv6Address('2001:db8:::1'), throwsAddressValueError);
     expect(() => new IPv6Address('2001:888888::1'), throwsAddressValueError);
+    expect(() => new IPv6Address(['2001:db8::']), throwsAddressValueError);
+    expect(() => new IPv6Address(['2001:db8::',32,0]), throwsAddressValueError);
   });
 
   test('Get Network', () {
@@ -194,6 +196,14 @@ void main() {
     for (int i in new Iterable.generate(129)) {
       String net_str = '::/$i';
       expect(new IPv6Network(net_str).toString(), equals(net_str));
+
+      /// Parse some 2-tuple inputs.
+      expect(new IPv6Network([0,i]).toString(), equals(net_str));
+      expect(new IPv6Network(['::',i]).toString(), equals(net_str));
+      expect(new IPv6Network([new IPv6Address('::'), i]).toString(),
+          equals(net_str));
+
+      /// zero prefix is treated as decimal   
       expect(new IPv6Network('::/0$i').toString(), equals(net_str));
     }
   });
@@ -201,13 +211,23 @@ void main() {
   test('Bad Netmask', () {
     expect(() => new IPv6Network('::1/'), throwsNetmaskValueError);
     expect(() => new IPv6Network('::1/-1'), throwsNetmaskValueError);
+    expect(() => new IPv6Network(['::1','-1']), throwsNetmaskValueError);
     expect(() => new IPv6Network('::1/+1'), throwsNetmaskValueError);
     expect(() => new IPv6Network('::1/0x1'), throwsNetmaskValueError);
     expect(() => new IPv6Network('::1/129'), throwsNetmaskValueError);
+    expect(() => new IPv6Network(['::1','129']), throwsNetmaskValueError);
     expect(() => new IPv6Network('::1/1.2.3.4'), throwsNetmaskValueError);
     expect(() => new IPv6Network('::/::'), throwsNetmaskValueError);
+    /// List constructors only accept integer prefixes at the moment
+    expect(() => new IPv6Network(['::','0']), throwsNetmaskValueError);
   });
-
+  
+  test('copy constructors', () {
+    var v6addr = new BadStringIPv6Address('2001:db8::');
+    expect(v6addr.toString(), equals('<IPv6>'));
+    expect(v6addr, equals(new IPv6Address(v6addr)));
+  });
+  
   test('nth', () {
     expect(ipv6[5].toString(), equals('2001:658:22a:cafe::5'));
   });
@@ -286,6 +306,7 @@ void main() {
 
   test('strict networks', () {
     expect(() => IPNetwork('::1/120', strict: true), throwsValueError);
+    expect(() => IPNetwork(['::1',120], strict: true), throwsValueError);
   });
 
   test('Embedded IPv4', () {
@@ -480,4 +501,10 @@ void main() {
     expect(new IPv6Address('::FFFF:192.0.2.1'), equals(new IPv6Address('::FFFF:c000:201')));
     expect(new IPv6Address('FFFF::192.0.2.1'), equals(new IPv6Address('FFFF::c000:201')));
   });
+}
+
+/// test class with unparseable string representation
+class BadStringIPv6Address extends IPv6Address {
+  BadStringIPv6Address(address) : super(address);
+  @override String toString() => '<IPv6>';
 }
