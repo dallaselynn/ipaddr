@@ -18,7 +18,7 @@ library ipv4_test;
 
 import 'dart:mirrors';
 import 'dart:math';
-import 'package:unittest/unittest.dart';
+import 'package:test/test.dart';
 import 'package:ipaddr/ipaddr.dart';
 
 void main() {
@@ -26,7 +26,6 @@ void main() {
   final throwsNetmaskValueError =
       throwsA(new isInstanceOf<NetmaskValueError>());
   final throwsTypeError = throwsA(new isInstanceOf<TypeError>());
-  final throwsRangeError = throwsA(new isInstanceOf<RangeError>());
   final throwsVersionError = throwsA(new isInstanceOf<VersionError>());
 
   var ipv4 = new IPv4Network('1.2.3.4/24');
@@ -143,7 +142,7 @@ void main() {
         throwsA(new isInstanceOf<AddressValueError>()));
 
     expect(
-        IPNetwork('1.2.3.4'), equals(IPNetwork(IPNetwork('1.2.3.4').toInt())));
+        IPNetwork('1.2.3.4'), equals(IPNetwork(IPNetwork('1.2.3.4').ip.toInt())));
     expect(IPNetwork(ipv4.ip).version, equals(4));
   });
 
@@ -506,7 +505,7 @@ void main() {
     expect(ip2 > ip3, isFalse);
     expect(ip3 > ip2, isTrue);
 
-    //        # Regression test for issue 28.
+    /// Regression test for issue 28.
     ip1 = IPNetwork('10.10.10.0/31');
     ip2 = IPNetwork('10.10.10.0');
     ip3 = IPNetwork('10.10.10.2/31');
@@ -639,7 +638,7 @@ void main() {
   });
 
   test('int representation', () {
-    expect(16909060, equals(ipv4.toInt()));
+    expect(16909060, equals(new IPv4Address('1.2.3.4').toInt()));
   });
 
   test('force version', () {
