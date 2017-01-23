@@ -2,7 +2,7 @@
 library ipv6_test;
 
 import 'dart:math';
-import 'package:unittest/unittest.dart';
+import 'package:test/test.dart';
 import 'package:ipaddr/ipaddr.dart';
 
 void main() {
@@ -516,11 +516,10 @@ void main() {
     bad_addr = '2001:0001:4136:e378:8000:63bf:3fff:fdd2';
     expect(IPAddress(bad_addr).teredo, isNull);
 
-    teredo_addr = new IPv6Address('2001:0:5ef5:79fd:0:59d:a0e5:ba1');
     expect([
       new IPv4Address('94.245.121.253'),
       new IPv4Address('95.26.244.94')
-    ], equals(teredo_addr.teredo));
+    ], equals(new IPv6Address('2001:0:5ef5:79fd:0:59d:a0e5:ba1').teredo));
   });
 
   test('Six to Four', () {
