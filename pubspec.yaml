@@ -6,4 +6,4 @@ homepage: http://dallaslynn.com
 dependencies:
   bignum: any
 dev_dependencies:
-  unittest: any
+  test: any
