@@ -45,11 +45,13 @@ IPAddress(var address, {int version: null}) {
 
   try {
     return new IPv4Address(address);
-  } catch (AddressValueError, NetmaskValueError) {}
+  } on AddressValueError {} 
+    on NetmaskValueError {};
 
   try {
     return new IPv6Address(address);
-  } catch (AddressValueError, NetmaskValueError) {}
+  } on AddressValueError {}
+    on NetmaskValueError {};
 
   throw new ValueError(
       "$address does not appear to be an IPv4 or IPv6 address");
