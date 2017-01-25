@@ -5,13 +5,11 @@ part of ipaddr;
  */
 
 abstract class _BaseV6 {
-  final int ALL_ONES = pow(2, IPV6LENGTH) - 1;
   final int HEXTET_COUNT = 8;
-  final int _version = 6;
-  final int max_prefixlen = IPV6LENGTH;
 
-  int get version => _version;
-  int toInt() => _ip;
+  int get ALL_ONES => pow(2, IPV6LENGTH) - 1;
+  int get max_prefixlen => IPV6LENGTH;
+  int get version => 6;
 
   /**
    * Turn an IPv6 ip_str into an integer.
