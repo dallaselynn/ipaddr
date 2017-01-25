@@ -455,7 +455,7 @@ class IPv6Network extends _BaseV6 with IterableMixin<_BaseIP>, _BaseNet {
 
     if (address is List) {
       if (address.length != 2) {
-        throw new AddressValueError(address);
+        throw new AddressValueError("$address must be a two item list");
       }
 
       this.ip = new IPv6Address(address[0]);
