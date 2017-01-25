@@ -112,7 +112,7 @@ abstract class _BaseV6 {
       }
 
       return ip_int;
-    } on ValueError catch (e) {
+    } on ValueError {
       throw new AddressValueError(ip_str);
     }
   }
@@ -134,7 +134,7 @@ abstract class _BaseV6 {
 
     try {
       int hextet_int = int.parse(hextet, radix: 16);
-    } on FormatException catch (e) {
+    } on FormatException {
       throw new ValueError('can not parse hex integer from $hextet');
     }
 
