@@ -234,7 +234,7 @@ collapse_address_list(List<dynamic> addresses) {
       nets = [];
 
   // split IP addresses and networks
-  for (var ip in addresses) {
+  for (dynamic ip in addresses) {
     if (ip is _BaseIP) {
       if (ips.isNotEmpty && ips.last.version != ip.version) {
         throw new VersionError(
@@ -246,13 +246,14 @@ collapse_address_list(List<dynamic> addresses) {
         throw new VersionError(
             "$ip and ${ips.last} are not of the same version");
       }
-      ips.add(ip.ip);
+      ips.add(ip.network_address);
     } else {
+      /// if it's not a _BaseIP we assume it's a Network
       if (nets.isNotEmpty && nets.last.version != ip.version) {
         throw new VersionError(
             "$ip and ${ips.last} are not of the same version");
       }
-
+      /// add an IPvXNetwork object
       nets.add(ip);
     }
   }
@@ -278,11 +279,9 @@ collapse_address_list(List<dynamic> addresses) {
 }
 
 abstract class _BaseV4 {
-  final int ALL_ONES = pow(2, IPV4LENGTH) - 1;
-  final int version = 4;
-  final int max_prefixlen = IPV4LENGTH;
-
-  int toInt() => _ip;
+  int get ALL_ONES => pow(2, IPV4LENGTH) - 1;
+  int get max_prefixlen => IPV4LENGTH;
+  int get version => 4;
 
   /**
    *  Turn the given IP string into an integer for comparison.
@@ -401,13 +400,17 @@ abstract class _BaseV4 {
 }
 
 abstract class _BaseIP {
-  // abstract instance members
+  /// The integer representatation of the IP address.
+  int _ip;
+  /// The ip version, eg. 4 or 6.
   int get version;
-  int get _ip;
+  /// A method to return a string from the integer representation of the IP.
   String _string_from_ip_int(ip_int);
 
+  int toInt() => _ip; 
   String toString() => _string_from_ip_int(_ip);
-  bool operator ==(Object other) =>
+
+  bool operator ==(other) =>
       (_ip == other._ip) && (version == other.version);
 
   // DIFFERENCE: Python version returns NotImplemented if other is not an int for +/-
@@ -439,19 +442,36 @@ abstract class _BaseIP {
 }
 
 abstract class _BaseNet {
-  // abstract instance members
-  // TODO: should be getters?  these are not really abstract.
-  //int prefixlen, max_prefixlen, version;
-  var ip, netmask; // IPv4Address or IPv6Address
+  // .network_address: IPv4Address('192.0.2.0')
+  // .hostmask: IPv4Address('0.0.0.31')
+  // .broadcast_address: IPv4Address('192.0.2.32')
+  // .netmask: IPv4Address('255.255.255.224')
+  // .prefixlen: 27
+
+  ///the IPv4Address or IPv6Address
+  var _network_address, _netmask;
+  int _prefixlen;
+
   int get ALL_ONES;
   Map<String, Object> _cache;
   int _ip_int_from_string(String ip_str);
 
-  int get prefixlen;
+  get network_address => _network_address;
+  set network_address(var address) => _network_address = address;
+
+  get netmask => _netmask;
+  set netmask(var netmask) => _netmask = netmask;
+
+  /// The prefix length of the network.
+  int get prefixlen => _prefixlen;
+  set prefixlen(int prefixlen) => _prefixlen = prefixlen;
+
+  /// The largest possible prefix length.
   int get max_prefixlen;
+  /// The IP version, eg. 4 or 6.
   int get version;
 
-  String toString() => "$ip/$prefixlen";
+  String toString() => "$network_address/$prefixlen";
   int get hashCode => (network.toInt() ^ netmask.toInt()).hashCode;
 
   bool operator <(_BaseNet other) {
@@ -493,14 +513,14 @@ abstract class _BaseNet {
   bool operator <=(_BaseNet other) => !(this > other);
   bool operator >=(_BaseNet other) => !(this < other);
 
-  bool operator ==(Object other) {
+  bool operator ==(other) {
     try {
       return (version == other.version) &&
           (network == other.network) &&
           (netmask.toInt() == other.netmask.toInt());
     } catch (e) {
       if (other is _BaseIP) {
-        return (version == other.version) && (_ip == other._ip);
+        return (version == other.version) && (network_address._ip == other._ip);
       } else {
         return false;
       }
@@ -550,7 +570,7 @@ abstract class _BaseNet {
   _BaseIP get network {
     var x = _cache['network'];
     if (x == null) {
-      x = IPAddress(_ip & netmask.toInt(), version: version);
+      x = IPAddress(network_address._ip & netmask.toInt(), version: version);
       _cache['network'] = x;
     }
 
@@ -560,7 +580,7 @@ abstract class _BaseNet {
   _BaseIP get broadcast {
     var x = _cache['broadcast'];
     if (x == null) {
-      x = IPAddress(_ip | hostmask.toInt(), version: version);
+      x = IPAddress(network_address._ip | hostmask.toInt(), version: version);
       _cache['broadcast'] = x;
     }
 
@@ -577,9 +597,9 @@ abstract class _BaseNet {
     return x;
   }
 
-  String get with_prefixlen => '$ip/$prefixlen';
-  String get with_netmask => '$ip/$netmask';
-  String get with_hostmask => '$ip/$hostmask';
+  String get with_prefixlen => '$network_address/$prefixlen';
+  String get with_netmask => '$network_address/$netmask';
+  String get with_hostmask => '$network_address/$hostmask';
 
   get numhosts => broadcast.toInt() - network.toInt() + 1;
 
@@ -959,8 +979,6 @@ abstract class _BaseNet {
 }
 
 class IPv4Address extends _BaseV4 with _BaseIP {
-  int _ip;
-
   IPv4Address(address) {
     if (address is int) {
       this._ip = address;
@@ -1047,9 +1065,8 @@ class NetworkIterable extends Object with IterableMixin<_BaseIP> {
 }
 
 class IPv4Network extends _BaseV4 with IterableMixin<_BaseIP>, _BaseNet {
-  int _ip, prefixlen;
-  IPv4Address ip, netmask;
-  Map<String, Object> _cache = {};
+  // todo: replace this with either network_address._ip or whatnot.
+  int _ip;
 
   Iterator<_BaseIP> get iterator =>
       new NetworkIterator(network.toInt(), broadcast.toInt(), version);
@@ -1071,9 +1088,12 @@ class IPv4Network extends _BaseV4 with IterableMixin<_BaseIP>, _BaseNet {
   }
 
   IPv4Network(address, {bool strict: false}) {
+    _cache = {};
+
     if (address is int || address is IPv4Address) {
-      this.ip = new IPv4Address(address);
-      this._ip = ip._ip;
+      /// TODO: remove this - not needed
+      this.network_address = new IPv4Address(address);
+      this._ip = network_address._ip;
       this.prefixlen = max_prefixlen;
       this.netmask = new IPv4Address(ALL_ONES);
       return;
@@ -1081,12 +1101,12 @@ class IPv4Network extends _BaseV4 with IterableMixin<_BaseIP>, _BaseNet {
 
     if (address is List) {
       if (address.length != 2) {
-        throw new AddressValueError(address);
+        throw new AddressValueError("$address must be a two item list");
       }
 
-      this.ip = new IPv4Address(address[0]);
-      this._ip = this.ip._ip;
-      this.prefixlen = _prefix_from_prefix_int(address[1]);
+      this.network_address = new IPv4Address(address[0]);
+      this._ip = this.network_address._ip;
+      this.prefixlen = _prefix_from_prefix_int(int.parse(address[1].toString()));
     } else {
       List<String> addr = address.toString().split('/');
       if (addr.length > 2) {
@@ -1094,7 +1114,7 @@ class IPv4Network extends _BaseV4 with IterableMixin<_BaseIP>, _BaseNet {
       }
 
       this._ip = _ip_int_from_string(addr[0]);
-      this.ip = new IPv4Address(_ip);
+      this.network_address = new IPv4Address(_ip);
 
       if (addr.length == 2) {
         try {
@@ -1109,8 +1129,8 @@ class IPv4Network extends _BaseV4 with IterableMixin<_BaseIP>, _BaseNet {
 
     this.netmask = new IPv4Address(_ip_int_from_prefix(prefixlen));
 
-    if (strict && (ip != network)) {
-      throw new ValueError('$ip has host bits set');
+    if (strict && (network_address != network)) {
+      throw new ValueError('$network_address has host bits set');
     }
   }
 }
