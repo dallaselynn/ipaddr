@@ -422,7 +422,6 @@ class IPv6Address extends Object with _BaseV6, _BaseIP {
 class IPv6Network extends _BaseV6 with IterableMixin<_BaseIP>, _BaseNet {
   int _ip, prefixlen;
   IPv6Address ip, netmask;
-  Map<String, Object> _cache = {};
 
   Iterator<_BaseIP> get iterator =>
       new NetworkIterator(network.toInt(), broadcast.toInt(), version);
@@ -444,6 +443,8 @@ class IPv6Network extends _BaseV6 with IterableMixin<_BaseIP>, _BaseNet {
   }
 
   IPv6Network(var address, {strict: false}) {
+    _cache = {};
+    /// TODO: remote redundant 'this'
     if (address is int || address is IPv6Address) {
       this.ip = new IPv6Address(address);
       this._ip = ip._ip;
