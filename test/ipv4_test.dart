@@ -134,7 +134,7 @@ void main() {
   });
 
   test('IP from int', () {
-    expect(ipv4.ip, equals(new IPv4Network(16909060).ip));
+    expect(ipv4.network_address, equals(new IPv4Network(16909060).network_address));
 
     expect(() => new IPv4Network(-1),
         throwsA(new isInstanceOf<AddressValueError>()));
@@ -142,14 +142,14 @@ void main() {
         throwsA(new isInstanceOf<AddressValueError>()));
 
     expect(
-        IPNetwork('1.2.3.4'), equals(IPNetwork(IPNetwork('1.2.3.4').ip.toInt())));
-    expect(IPNetwork(ipv4.ip).version, equals(4));
+        IPNetwork('1.2.3.4'), equals(IPNetwork(IPNetwork('1.2.3.4').network_address.toInt())));
+    expect(IPNetwork(ipv4.network_address).version, equals(4));
   });
 
   test('get ip', () {
-    expect(ipv4.ip.toInt(), equals(16909060));
-    expect(ipv4.ip.toString(), equals('1.2.3.4'));
-    expect(ipv4_hostmask.ip.toString(), equals('10.0.0.1'));
+    expect(ipv4.network_address.toInt(), equals(16909060));
+    expect(ipv4.network_address.toString(), equals('1.2.3.4'));
+    expect(ipv4_hostmask.network_address.toString(), equals('10.0.0.1'));
   });
 
   test('get netmask', () {
