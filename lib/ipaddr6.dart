@@ -212,10 +212,6 @@ abstract class _BaseV6 {
    */
 
   String _string_from_ip_int(int ip_int) {
-    if (ip_int == null) {
-      ip_int = _ip;
-    }
-
     if (ip_int > ALL_ONES) {
       throw new ValueError('IPv6 address is too large');
     }
